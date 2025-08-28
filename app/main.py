@@ -11,13 +11,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.models import init_database, get_db, Member, Membership, PTSession
 from utils.member_manager import MemberManager
 
-# 페이지 설정
-st.set_page_config(
-    page_title="PT Shop Management System",
-    page_icon="💪",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# 페이지 설정 (streamlit_app.py에서 실행되지 않은 경우만)
+if not os.environ.get('STREAMLIT_RUNNING'):
+    st.set_page_config(
+        page_title="PT Shop Management System",
+        page_icon="💪",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
 
 # CSS 로드
 def load_css():
