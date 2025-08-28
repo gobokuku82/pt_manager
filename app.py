@@ -24,41 +24,40 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS 로드
-def load_css():
-    # 먼저 파일에서 로드 시도
-    css_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'styles', 'style.css')
-    try:
-        with open(css_path, encoding='utf-8') as f:
-            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-            return
-    except FileNotFoundError:
-        pass
-    
-    # 파일이 없으면 인라인 CSS 사용
+# CSS 로드 - 인라인 스타일로 직접 적용
+def load_header_with_style():
+    """헤더와 CSS를 함께 렌더링"""
+    html = """
+    <style>
+        .main-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        .main-header h1 {
+            color: white !important;
+            font-size: 2.5rem !important;
+            font-weight: bold !important;
+            margin: 0 0 0.5rem 0 !important;
+        }
+        .main-header p {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-size: 1.2rem !important;
+            margin: 0 !important;
+        }
+    </style>
+    <div class="main-header">
+        <h1>💪 PT Shop Management System</h1>
+        <p>성수PT - 사용자 : 김태호</p>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+
+def load_additional_css():
+    """추가 CSS 스타일"""
     st.markdown("""
     <style>
-    /* PT Shop Management System Custom CSS */
-    
-    .header-container {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 2rem;
-        border-radius: 10px;
-        color: white;
-        margin-bottom: 2rem;
-    }
-    
-    .header-title {
-        font-size: 2.5rem;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-    }
-    
-    .header-subtitle {
-        font-size: 1.2rem;
-        opacity: 0.9;
-    }
-    
     .stat-card {
         background: white;
         border-radius: 10px;
@@ -129,19 +128,14 @@ def initialize_database():
 
 # 초기화
 initialize_database()
-load_css()
 
 # 세션 상태 초기화
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Dashboard'
 
-# 헤더
-st.markdown("""
-<div class="header-container">
-    <div class="header-title">💪 PT Shop Management System</div>
-    <div class="header-subtitle">성수PT - 사용자 : 김태호 </div>
-</div>
-""", unsafe_allow_html=True)
+# 헤더와 CSS를 함께 로드
+load_header_with_style()
+load_additional_css()
 
 # 사이드바 메뉴
 with st.sidebar:
