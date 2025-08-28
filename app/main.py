@@ -27,8 +27,8 @@ def load_css():
         with open(css_path, encoding='utf-8') as f:
             st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
     except FileNotFoundError:
-        st.warning(f"CSS 파일을 찾을 수 없습니다: {css_path}")
-        # CSS 없이 계속 실행
+        # CSS 파일이 없어도 계속 실행 - 경고 메시지 표시하지 않음
+        pass
 
 # 데이터베이스 초기화
 init_database()
