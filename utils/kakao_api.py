@@ -1,17 +1,20 @@
 import requests
 import json
+import sys
 import os
 from typing import Dict, Optional, List
-from dotenv import load_dotenv
 from datetime import datetime
 
-load_dotenv()
+# 프로젝트 루트 경로 추가
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config.config import get_config
 
 class KakaoAPI:
     def __init__(self):
-        self.rest_api_key = os.getenv("KAKAO_REST_API_KEY")
-        self.admin_key = os.getenv("KAKAO_ADMIN_KEY")
-        self.channel_id = os.getenv("KAKAO_CHANNEL_ID")
+        config = get_config()
+        self.rest_api_key = config.get("KAKAO_REST_API_KEY")
+        self.admin_key = config.get("KAKAO_ADMIN_KEY")
+        self.channel_id = config.get("KAKAO_CHANNEL_ID")
         self.base_url = "https://kapi.kakao.com"
         
     def send_template_message(self, receiver_uuid: str, template_id: str, template_args: Dict) -> Dict:

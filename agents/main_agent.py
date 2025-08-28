@@ -6,16 +6,21 @@ from agents.tools import tools
 from utils.kakao_api import kakao_api
 from database.models import Member, get_db
 import json
+import sys
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# 프로젝트 루트 경로 추가
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config.config import get_config
+
+# 설정 가져오기
+config = get_config()
 
 # OpenAI 모델 초기화
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0.7,
-    api_key=os.getenv("OPENAI_API_KEY")
+    api_key=config.get("OPENAI_API_KEY")
 )
 
 # 도구가 있는 LLM

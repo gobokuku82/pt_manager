@@ -21,7 +21,7 @@ st.set_page_config(
 
 # CSS 로드
 def load_css():
-    with open('styles/style.css') as f:
+    with open('styles/style.css', encoding='utf-8') as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 # 데이터베이스 초기화
@@ -38,7 +38,7 @@ if 'current_page' not in st.session_state:
 st.markdown("""
 <div class="header-container">
     <div class="header-title">💪 PT Shop Management System</div>
-    <div class="header-subtitle">회원 관리 및 상담 챗봇 시스템</div>
+    <div class="header-subtitle">성수PT - 사용자 : 김태호 </div>
 </div>
 """, unsafe_allow_html=True)
 
