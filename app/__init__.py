@@ -1,1 +1,0 @@
-# PT Shop Management System - App Module
