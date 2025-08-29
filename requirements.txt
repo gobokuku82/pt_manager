@@ -1,16 +1,48 @@
+# ===========================
+# PT Manager v2 Requirements
+# ===========================
+
+# Core AI/LangGraph
 langgraph>=0.6.6
 langchain>=0.3.27
 langchain-openai>=0.3.32
-langchain-community>=0.3.0
-langgraph-sdk>=0.2.3
-langgraph-api>=0.4.1
 openai>=1.101.0
+
+# Streamlit & UI Components
 streamlit>=1.40.0
-sqlalchemy>=2.0.43
-pandas>=2.3.1
-python-dotenv>=1.0.1
-requests>=2.32.3
-pydantic>=2.10.0
-aiohttp>=3.10.0
-pillow>=11.0.0
 streamlit-option-menu>=0.4.0
+streamlit-float>=0.3.2
+streamlit-chat>=0.1.1
+streamlit-drawable-canvas>=0.9.3
+streamlit-extras>=0.4.0
+
+# Google Sheets Database
+gspread>=6.1.0
+google-auth>=2.34.0
+google-auth-oauthlib>=1.2.0
+oauth2client>=4.1.3
+
+# Data Processing
+pandas>=2.3.1
+numpy>=1.26.0
+python-dateutil>=2.9.0
+
+# Image & Document Processing
+pillow>=11.0.0
+reportlab>=4.2.0
+qrcode>=7.4.2
+pypdf>=4.0.0
+
+# API & Web
+requests>=2.32.3
+aiohttp>=3.10.0
+pydantic>=2.10.0
+
+# Utilities
+python-dotenv>=1.0.1
+pytz>=2024.1
+# uuid>=1.30
+
+# Security & Encoding
+cryptography>=42.0.0
+python-jose>=3.3.0

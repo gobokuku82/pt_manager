@@ -49,3 +49,6 @@ temp/
 # API Keys and Secrets
 config/*.env
 !config/.env.example
+pt-manager-*.json
+*.json
+service-account-*.json
