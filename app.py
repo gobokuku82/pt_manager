@@ -195,7 +195,7 @@ load_custom_css()
 st.markdown("""
 <div class="main-header">
     <h1>🏋️ PT Manager</h1>
-    <p>스마트한 PT샵 관리 시스템</p>
+    <p>성수 건물주로 가는길</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -254,18 +254,18 @@ if db:
         for schedule in today_schedules:
             # 현재 시간과 비교하여 상태 결정
             current_time = datetime.now().strftime("%H:%M")
-            if schedule.time < current_time:
+            if schedule.get('time', '') < current_time:
                 status = "완료"
-            elif schedule.time <= (datetime.now() + timedelta(hours=1)).strftime("%H:%M"):
+            elif schedule.get('time', '') <= (datetime.now() + timedelta(hours=1)).strftime("%H:%M"):
                 status = "진행중"
             else:
                 status = "예정"
             
             schedule_data.append({
-                "시간": schedule.time,
-                "회원명": schedule.member_name,
-                "PT종류": schedule.pt_type,
-                "트레이너": schedule.trainer_name,
+                "시간": schedule.get('time', ''),
+                "회원명": schedule.get('member_name', ''),
+                "PT종류": schedule.get('pt_type', ''),
+                "트레이너": schedule.get('trainer_name', ''),
                 "상태": status
             })
         
@@ -326,11 +326,11 @@ if db:
         members = db.get_all_members()
         expiring_soon = []
         for member in members:
-            if hasattr(member, 'membership_end_date'):
-                end_date = datetime.strptime(member.membership_end_date, "%Y-%m-%d")
+            if 'membership_end_date' in member and member.get('membership_end_date'):
+                end_date = datetime.strptime(member.get('membership_end_date'), "%Y-%m-%d")
                 days_left = (end_date - datetime.now()).days
                 if 0 < days_left <= 7:
-                    expiring_soon.append((member.name, days_left))
+                    expiring_soon.append((member.get('name', ''), days_left))
         
         if expiring_soon:
             for name, days in expiring_soon[:2]:  # 최대 2개만 표시
@@ -340,16 +340,16 @@ if db:
         tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
         tomorrow_schedules = db.get_schedules_by_date(tomorrow)
         if tomorrow_schedules:
-            morning_sessions = [s for s in tomorrow_schedules if s.time < "12:00"]
+            morning_sessions = [s for s in tomorrow_schedules if s.get('time', '') < "12:00"]
             if morning_sessions:
                 st.warning(f"⚠️ 내일 오전 PT 세션 예약이 {len(morning_sessions)}건 있습니다")
     
     with col2:
         # 최근 서명 완료 계약서
         recent_contracts = db.get_recent_contracts(limit=5)
-        signed_contracts = [c for c in recent_contracts if c.status == "signed"]
+        signed_contracts = [c for c in recent_contracts if c.get('status') == "signed"]
         if signed_contracts:
-            st.success(f"✅ {signed_contracts[0].member_name} 회원이 계약서에 서명했습니다")
+            st.success(f"✅ {signed_contracts[0].get('member_name', '')} 회원이 계약서에 서명했습니다")
         
         # 오늘 리마인더 전송 (예시)
         if today_schedules:
@@ -413,6 +413,9 @@ with st.sidebar:
         if db:
             # 캐시 클리어하여 새로운 데이터 로드
             st.cache_resource.clear()
+            st.cache_data.clear()
+            # 데이터베이스 캐시도 클리어
+            db.clear_cache()
             st.success("Google Sheets와 동기화되었습니다")
             st.rerun()
         else:
