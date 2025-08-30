@@ -7,6 +7,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta, date
 from database.gsheets import GoogleSheetsDB
+from utils.sidebar_chat import render_sidebar_chat
 
 # 페이지 설정
 st.set_page_config(
@@ -21,6 +22,10 @@ def get_db():
     return GoogleSheetsDB()
 
 db = get_db()
+
+# 사이드바에 챗봇 추가
+with st.sidebar:
+    render_sidebar_chat(db)
 
 # 스타일
 st.markdown("""
