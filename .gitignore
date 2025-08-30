@@ -50,5 +50,12 @@ temp/
 config/*.env
 !config/.env.example
 pt-manager-*.json
-*.json
 service-account-*.json
+
+# Excel files
+*.xlsx
+*.csv
+
+# Test files
+# test_*.py
+check_excel.py
