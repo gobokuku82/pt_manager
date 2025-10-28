@@ -3,7 +3,8 @@
     "allow": [
       "Bash(rm:*)",
       "Bash(del:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

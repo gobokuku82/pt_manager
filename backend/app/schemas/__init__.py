@@ -1,3 +1,13 @@
+"""
+Schemas Package
+
+범용 에이전트 프레임워크 - API 스키마
+
+범용 스키마만 포함됩니다:
+- Users: 사용자 관리
+- Chat: 채팅 세션 및 메시지
+"""
+
 from app.schemas.users import (
     UserCreate,
     UserUpdate,
@@ -10,27 +20,6 @@ from app.schemas.users import (
     SocialAuthCreate,
     UserFavoriteCreate,
     UserFavoriteResponse,
-)
-
-from app.schemas.real_estate import (
-    RegionCreate,
-    RegionUpdate,
-    RegionResponse,
-    RealEstateCreate,
-    RealEstateUpdate,
-    RealEstateResponse,
-    RealEstateWithTransactions,
-    RealEstateWithRegion,
-    TransactionCreate,
-    TransactionUpdate,
-    TransactionResponse,
-    TransactionWithRealEstate,
-)
-
-from app.schemas.trust import (
-    TrustScoreCreate,
-    TrustScoreUpdate,
-    TrustScoreResponse,
 )
 
 from app.schemas.chat import (
@@ -55,23 +44,6 @@ __all__ = [
     "SocialAuthCreate",
     "UserFavoriteCreate",
     "UserFavoriteResponse",
-    # Real Estate
-    "RegionCreate",
-    "RegionUpdate",
-    "RegionResponse",
-    "RealEstateCreate",
-    "RealEstateUpdate",
-    "RealEstateResponse",
-    "RealEstateWithTransactions",
-    "RealEstateWithRegion",
-    "TransactionCreate",
-    "TransactionUpdate",
-    "TransactionResponse",
-    "TransactionWithRealEstate",
-    # Trust
-    "TrustScoreCreate",
-    "TrustScoreUpdate",
-    "TrustScoreResponse",
     # Chat
     "ChatSessionCreate",
     "ChatSessionUpdate",
