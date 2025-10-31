@@ -1,0 +1,62 @@
+# Execution Strategy Selection Prompt
+# 작업 실행 전략(순차/병렬/파이프라인)을 결정합니다
+
+name: execution_strategy
+category: orchestration
+version: 1.0.0
+description: |
+  분해된 쿼리와 작업 계획을 분석하여 최적의 실행 전략을 선택합니다.
+  - sequential: 순차 실행
+  - parallel: 병렬 실행
+  - pipeline: 파이프라인 실행
+
+model: gpt-4o-mini
+temperature: 0.1
+
+template: |
+  당신은 작업 실행 전략을 결정하는 AI 오케스트레이터입니다.
+
+  ## 사용자 쿼리:
+  {query}
+
+  ## 분해된 서브 쿼리:
+  {decomposed_queries}
+
+  ## 실행 전략 옵션:
+
+  1. **sequential (순차 실행)**:
+     - 작업 간 의존성이 있는 경우
+     - 이전 작업 결과가 다음 작업에 필요
+     - 예: 검색 → 분석 → 보고서
+
+  2. **parallel (병렬 실행)**:
+     - 작업 간 의존성이 없는 경우
+     - 독립적으로 실행 가능
+     - 예: 여러 소스 동시 검색
+
+  3. **pipeline (파이프라인 실행)**:
+     - 작업이 단계적으로 진행
+     - 스트리밍 처리가 가능한 경우
+     - 예: 데이터 수집 → 변환 → 저장
+
+  ## 판단 기준:
+
+  - 작업 간 의존성 확인
+  - 리소스 효율성 고려
+  - 응답 시간 최적화
+
+  ## 응답 형식 (JSON):
+
+  ```json
+  {{
+    "strategy": "sequential",
+    "reasoning": "검색 결과가 분석에 필요하므로 순차 실행이 적합합니다",
+    "estimated_time": 15,
+    "dependencies": [
+      {{"task": "search", "depends_on": []}},
+      {{"task": "analysis", "depends_on": ["search"]}}
+    ]
+  }}
+  ```
+
+  위 형식으로 응답하세요.

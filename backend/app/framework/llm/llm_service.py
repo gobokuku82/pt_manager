@@ -15,9 +15,9 @@ backend_dir = Path(__file__).parent.parent.parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from app.service_agent.foundation.context import LLMContext
-from app.service_agent.foundation.config import Config
-from app.service_agent.llm_manager.prompt_manager import PromptManager
+from app.framework.foundation.context import LLMContext
+from app.framework.foundation.config import Config
+from app.framework.llm.prompt_manager import PromptManager
 
 logger = logging.getLogger(__name__)
 

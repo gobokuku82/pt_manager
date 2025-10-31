@@ -1,0 +1,114 @@
+# 애플리케이션 설정
+# 환경 변수는 ${VAR_NAME} 형식으로 참조할 수 있습니다
+
+application:
+  name: "Generic Agent Framework"
+  version: "1.0.0"
+  description: "Domain-agnostic multi-agent framework based on LangGraph 0.6"
+  environment: "development"  # development, staging, production
+
+# 데이터베이스 설정
+database:
+  postgres:
+    host: "${POSTGRES_HOST:localhost}"
+    port: 5432
+    user: "${POSTGRES_USER:postgres}"
+    password: "${POSTGRES_PASSWORD:}"
+    database: "${POSTGRES_DB:agent_db}"
+    # Connection pool settings
+    pool_size: 10
+    max_overflow: 20
+    pool_pre_ping: true
+    echo: false  # SQL 로깅
+
+  # 선택적: MongoDB
+  mongodb:
+    enabled: false
+    url: "${MONGODB_URL:}"
+    database: "${MONGODB_DB:agent_db}"
+
+# API 설정
+api:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true  # 개발 모드에서만
+  workers: 1
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"
+  cors_allow_credentials: true
+  cors_allow_methods: ["*"]
+  cors_allow_headers: ["*"]
+
+# 세션 관리
+session:
+  ttl_hours: 24
+  cleanup_interval_minutes: 60
+  max_sessions_per_user: 10
+
+# 메모리 시스템 (Long-term Memory)
+memory:
+  enabled: true
+  retention_days: 90
+
+  # 3-tier memory limits
+  shortterm_limit: 5
+  midterm_limit: 5
+  longterm_limit: 10
+
+  # Token management
+  token_limit: 2000
+  summary_max_length: 200
+
+  # 데이터 재사용 (Optimization)
+  data_reuse:
+    enabled: true
+    message_limit: 5
+
+# 로깅 설정
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # File rotation
+  file_rotation: "daily"  # daily, size
+  max_log_size: "100MB"
+  backup_count: 7
+
+  # Log locations
+  log_dir: "logs"
+  app_log: "app.log"
+  error_log: "error.log"
+  access_log: "access.log"
+
+# 보안 설정
+security:
+  # JWT (향후 인증 시스템 구현 시)
+  jwt_secret_key: "${JWT_SECRET_KEY:your-secret-key-here}"
+  jwt_algorithm: "HS256"
+  jwt_expire_minutes: 60
+
+  # API Rate Limiting
+  rate_limit:
+    enabled: false
+    requests_per_minute: 60
+
+# 파일 저장소
+storage:
+  # 문서 생성 결과 저장 위치
+  documents_dir: "data/storage/documents/generated"
+
+  # 업로드 파일 저장 위치
+  uploads_dir: "data/storage/uploads"
+
+  # 최대 업로드 크기 (bytes)
+  max_upload_size: 10485760  # 10MB
+
+# 모니터링 및 메트릭
+monitoring:
+  enabled: false
+  # Prometheus metrics endpoint
+  metrics_endpoint: "/metrics"
+
+  # Health check
+  health_check_endpoint: "/health"

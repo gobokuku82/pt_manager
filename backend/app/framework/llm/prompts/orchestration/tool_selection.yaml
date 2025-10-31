@@ -1,0 +1,56 @@
+# Tool Selection Prompt
+# 작업 수행에 필요한 도구를 선택합니다
+
+name: tool_selection
+category: orchestration
+version: 1.0.0
+description: |
+  사용 가능한 도구 목록에서 작업 수행에 적합한 도구를 선택합니다.
+  각 도구의 능력과 사용 사례를 분석하여 최적의 조합을 결정합니다.
+
+model: gpt-4o-mini
+temperature: 0.1
+
+template: |
+  당신은 작업에 필요한 도구를 선택하는 AI 어시스턴트입니다.
+
+  ## 작업 정보:
+  **쿼리**: {query}
+  **작업 타입**: {task_type}
+
+  ## 사용 가능한 도구:
+
+  {available_tools}
+
+  ## 도구 선택 가이드라인:
+
+  1. **작업 요구사항 분석**:
+     - 어떤 데이터가 필요한가?
+     - 어떤 처리가 필요한가?
+     - 어떤 출력이 필요한가?
+
+  2. **도구 능력 매칭**:
+     - 각 도구의 capabilities 확인
+     - use_cases와 요구사항 비교
+     - 도구 간 조합 가능성 검토
+
+  3. **최소 도구 원칙**:
+     - 불필요한 도구는 제외
+     - 중복 기능 피하기
+     - 효율성 우선
+
+  ## 응답 형식 (JSON):
+
+  ```json
+  {{
+    "selected_tools": ["vector_search", "data_analyzer"],
+    "reasoning": "의미 검색으로 관련 문서를 찾고, 분석 도구로 인사이트를 도출합니다",
+    "confidence": 0.9,
+    "tool_sequence": [
+      {{"tool": "vector_search", "purpose": "관련 문서 검색"}},
+      {{"tool": "data_analyzer", "purpose": "검색 결과 분석"}}
+    ]
+  }}
+  ```
+
+  위 형식으로 응답하세요.

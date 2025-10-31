@@ -31,15 +31,13 @@ class Config:
     for directory in [CHECKPOINT_DIR, AGENT_LOGGING_DIR, LOG_DIR]:
         directory.mkdir(parents=True, exist_ok=True)
 
-    # ============ Database Paths (Active) ============
-    DATABASES = {
-        "real_estate_listings": DB_DIR / "real_estate" / "listings.db",      # Property listings DB
-        "regional_info": DB_DIR / "real_estate" / "regional_stats.db",       # Regional statistics DB
-        "user_profiles": DB_DIR / "user" / "profiles.db",                    # User profiles DB
-        "user_data": DB_DIR / "user" / "data.db",                            # User data DB
-        # Legal information databases
-        "legal_metadata": BASE_DIR / "data" / "storage" / "legal_info" / "sqlite_db" / "legal_metadata.db",
-    }
+    # ============ Database Paths (PostgreSQL Only) ============
+    # SQLite databases removed - using PostgreSQL only
+    # Legacy SQLite databases (if needed, uncomment):
+    # DATABASES = {
+    #     "legal_metadata": BASE_DIR / "data" / "storage" / "legal_info" / "sqlite_db" / "legal_metadata.db",
+    # }
+    DATABASES = {}
 
     # ============ Legal Search Paths ============
     LEGAL_INFO_BASE = BASE_DIR / "data" / "storage" / "legal_info"
@@ -133,7 +131,7 @@ class Config:
 
     @classmethod
     def get_database_path(cls, db_name: str) -> Path:
-        """Get database path by name"""
+        """Get database path by name (Legacy - SQLite not used)"""
         return cls.DATABASES.get(db_name, cls.DB_DIR / f"{db_name}.db")
 
     @classmethod

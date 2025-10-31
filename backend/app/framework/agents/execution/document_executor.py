@@ -22,7 +22,15 @@ import logging
 from typing import Dict, Any, List
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import interrupt
-from app.service_agent.foundation.separated_states import MainSupervisorState
+
+import sys
+from pathlib import Path
+backend_dir = Path(__file__).parent.parent.parent.parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
+from app.framework.agents.foundation.separated_states import MainSupervisorState
+from app.framework.tools.tool_registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +61,12 @@ class DocumentExecutor:
         self.llm_context = llm_context
         self.checkpointer = checkpointer
         self.progress_callback = progress_callback  # 🆕 Store parent's WebSocket callback
+        self.team_name = "document"  # Team name for consistency
         logger.info("📄 DocumentExecutor initialized")
+
+    def _get_team_name(self) -> str:
+        """팀 이름 반환 (일관성을 위한 메서드)"""
+        return self.team_name
 
     def build_workflow(self):
         """

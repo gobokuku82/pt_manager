@@ -1,0 +1,202 @@
+# 프레임워크 설정
+# 범용 에이전트 프레임워크의 핵심 설정
+
+framework:
+  version: "1.0.0"
+  name: "Generic Multi-Agent Framework"
+
+# LLM 설정
+llm:
+  provider: "openai"
+  api_key: "${OPENAI_API_KEY}"
+  organization: "${OPENAI_ORG_ID:}"
+  base_url: "${OPENAI_BASE_URL:}"  # 선택적
+
+  # 모델 매핑 (작업별로 다른 모델 사용 가능)
+  models:
+    # Cognitive agents
+    intent_analysis: "gpt-4o-mini"
+    plan_generation: "gpt-4o-mini"
+    query_decomposition: "gpt-4o-mini"
+
+    # Execution agents
+    keyword_extraction: "gpt-4o-mini"
+    data_analysis: "gpt-4o"
+    insight_generation: "gpt-4o"
+
+    # Response synthesis
+    response_synthesis: "gpt-4o-mini"
+    error_response: "gpt-4o-mini"
+    conversation_summary: "gpt-4o-mini"
+
+  # 기본 파라미터
+  default_params:
+    temperature: 0.3
+    max_tokens: 1000
+    top_p: 1.0
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
+
+  # 재시도 설정
+  retry:
+    max_attempts: 3
+    backoff_seconds: 1.0
+    exponential_backoff: true
+
+  # 타임아웃
+  timeout:
+    default: 30  # seconds
+    streaming: 60
+
+# Supervisor 설정
+supervisor:
+  type: "team_based"
+  enable_checkpointing: true
+
+  # Execution limits
+  max_recursion: 25
+  max_retries: 3
+  timeout: 300  # seconds
+
+  # HITL (Human-in-the-Loop)
+  hitl:
+    enabled: true
+    interrupt_timeout: 3600  # 1 hour
+
+# Agent 설정
+agents:
+  # General settings
+  timeout: 30  # seconds
+  max_message_length: 10000
+
+  # Progress reporting
+  progress:
+    enabled: true
+    interval_ms: 500
+
+  # Cognitive agents
+  cognitive:
+    planning:
+      enabled: true
+      max_steps: 10
+
+    query_decomposition:
+      enabled: true
+      max_subqueries: 5
+
+  # Execution agents
+  execution:
+    search:
+      enabled: true
+      max_results: 20
+      timeout: 30
+
+    analysis:
+      enabled: true
+      timeout: 60
+
+    document:
+      enabled: true
+      timeout: 120
+
+# Execution 설정
+execution:
+  # 기본 실행 전략
+  default_strategy: "sequential"  # sequential, parallel, pipeline
+
+  # 병렬 실행
+  parallel:
+    enabled: true
+    max_workers: 3
+
+  # 에러 핸들링
+  error_handling:
+    strategy: "continue"  # continue, stop, rollback
+    retry_on_error: true
+    max_retries: 2
+
+# Tool 설정
+tools:
+  # 자동 발견 (app/domain/tools/ 에서 자동으로 Tool 로드)
+  auto_discover: false
+
+  # Discovery paths
+  discovery_paths:
+    - "app.domain.tools"
+    - "app.framework.tools"
+
+  # Tool 실행 타임아웃
+  timeout: 30  # seconds
+
+  # Tool 재시도
+  retry:
+    enabled: true
+    max_attempts: 2
+
+# State 관리
+state:
+  # State 저장
+  persistence:
+    enabled: true
+    backend: "postgres"  # postgres, redis, memory
+
+  # State 압축 (큰 State 최적화)
+  compression:
+    enabled: false
+    threshold_bytes: 10240  # 10KB
+
+# Checkpointing (LangGraph)
+checkpointing:
+  enabled: true
+  backend: "postgres"  # postgres, sqlite, memory
+
+  # Checkpoint 정리
+  cleanup:
+    enabled: true
+    retention_days: 30
+    interval_hours: 24
+
+# Paths (디렉토리 경로)
+paths:
+  # System directories
+  checkpoint_dir: "data/system/checkpoints"
+  agent_logging_dir: "data/system/agent_logging"
+  log_dir: "logs"
+
+  # Config directories
+  config_dir: "config"
+  prompts_dir: "config/prompts"
+
+  # Domain directories
+  domain_agents_dir: "app/domain/agents"
+  domain_tools_dir: "app/domain/tools"
+
+# 프롬프트 설정
+prompts:
+  # 프롬프트 템플릿 디렉토리
+  template_dir: "config/prompts"
+
+  # 캐싱
+  cache:
+    enabled: false
+    ttl_seconds: 3600
+
+# 메트릭 및 로깅
+metrics:
+  # Agent 실행 메트릭 수집
+  collect_metrics: true
+
+  # 상세 로깅
+  detailed_logging: true
+  log_llm_calls: false  # LLM 호출 상세 로그 (디버그용)
+
+# 개발 모드 설정
+development:
+  # 디버그 모드
+  debug: true
+
+  # 더미 데이터
+  use_mock_data: false
+
+  # 빠른 실행 (타임아웃 단축)
+  fast_mode: false

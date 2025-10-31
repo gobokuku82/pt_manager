@@ -17,30 +17,27 @@ backend_dir = Path(__file__).parent.parent.parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from app.service_agent.foundation.agent_registry import AgentRegistry
-from app.service_agent.foundation.agent_adapter import AgentAdapter
-from app.service_agent.llm_manager import LLMService
-from app.service_agent.cognitive_agents.query_decomposer import (
+from app.framework.agents.foundation.agent_registry import AgentRegistry
+from app.framework.agents.foundation.agent_adapter import AgentAdapter
+from app.framework.llm_manager import LLMService
+from app.framework.agents.cognitive.query_decomposer import (
     QueryDecomposer,
     DecomposedQuery,
     ExecutionMode as DecomposerExecutionMode
+)
+from app.framework.agents.cognitive.intent_loader import (
+    get_intent_config,
+    IntentDefinition,
+    IntentConfig
 )
 
 logger = logging.getLogger(__name__)
 
 
-class IntentType(Enum):
-    """의도 타입 정의"""
-    LEGAL_CONSULT = "법률상담"
-    MARKET_INQUIRY = "시세조회"
-    LOAN_CONSULT = "대출상담"
-    CONTRACT_CREATION = "계약서작성"
-    CONTRACT_REVIEW = "계약서검토"
-    COMPREHENSIVE = "종합분석"
-    RISK_ANALYSIS = "리스크분석"
-    UNCLEAR = "unclear"
-    IRRELEVANT = "irrelevant"
-    ERROR = "error"
+# Intent types are now loaded from intents.yaml via IntentLoader
+# Common system intents (for reference):
+# - "information_inquiry", "data_analysis", "document_generation", "document_review"
+# - "comprehensive_analysis", "unclear", "irrelevant"
 
 
 class ExecutionStrategy(Enum):
@@ -54,7 +51,7 @@ class ExecutionStrategy(Enum):
 @dataclass
 class IntentResult:
     """의도 분석 결과"""
-    intent_type: IntentType
+    intent_type: str  # Intent name (e.g., "information_inquiry", "data_analysis", "unclear")
     confidence: float
     keywords: List[str] = field(default_factory=list)
     reasoning: str = ""
@@ -100,53 +97,27 @@ class PlanningAgent:
             llm_context: LLM Context (Optional)
         """
         self.llm_service = LLMService(llm_context=llm_context) if llm_context else None
+        # Load intent configuration from YAML
+        self.intent_config = get_intent_config()
         self.intent_patterns = self._initialize_intent_patterns()
         self.agent_capabilities = self._load_agent_capabilities()
         # Phase 1: Query Decomposer 추가
         self.query_decomposer = QueryDecomposer(self.llm_service)
 
-    def _initialize_intent_patterns(self) -> Dict[IntentType, List[str]]:
-        """의도 패턴 초기화 - 자연스러운 표현 추가"""
-        return {
-            IntentType.LEGAL_CONSULT: [
-                # 기존 키워드
-                "법", "전세", "임대", "보증금", "계약", "권리", "의무", "갱신",
-                # 자연스러운 표현 추가
-                "살다", "거주", "세입자", "집주인", "임차인", "임대인", "해지", "계약서",
-                "대항력", "확정일자", "우선변제", "임차권"
-            ],
-            IntentType.MARKET_INQUIRY: [
-                "시세", "가격", "매매가", "전세가", "시장", "동향", "평균",
-                # 자연스러운 표현 추가
-                "얼마", "비싸", "싸", "오르다", "내리다", "올랐", "떨어졌",
-                "시장", "매물", "호가"
-            ],
-            IntentType.LOAN_CONSULT: [
-                "대출", "금리", "한도", "조건", "상환", "LTV", "DTI",
-                # 자연스러운 표현 추가
-                "DSR", "담보대출", "전세자금", "빌리다", "대출받다", "이자"
-            ],
-            IntentType.CONTRACT_CREATION: [
-                "작성", "만들", "생성", "초안",
-                # 자연스러운 표현 추가
-                "써줘", "만들어줘", "작성해줘", "계약서"
-            ],
-            IntentType.CONTRACT_REVIEW: [
-                "검토", "확인", "점검", "리뷰", "분석해",
-                # 자연스러운 표현 추가
-                "봐줘", "살펴봐", "체크", "괜찮", "문제"
-            ],
-            IntentType.COMPREHENSIVE: [
-                "종합", "전체", "모든", "분석", "평가",
-                # 자연스러운 표현 추가
-                "어떻게", "방법", "해결", "대처", "도움", "조언", "추천"
-            ],
-            IntentType.RISK_ANALYSIS: [
-                "위험", "리스크", "주의", "문제점",
-                # 자연스러운 표현 추가
-                "조심", "걱정", "우려", "안전", "피해"
-            ]
-        }
+    def _initialize_intent_patterns(self) -> Dict[str, List[str]]:
+        """
+        의도 패턴 초기화 - IntentLoader에서 로드
+
+        Returns:
+            Dict[str, List[str]]: Intent name -> keywords mapping
+        """
+        patterns = {}
+        for intent_def in self.intent_config.intents:
+            if intent_def.enabled:
+                patterns[intent_def.name] = intent_def.keywords
+
+        logger.info(f"Loaded {len(patterns)} intent patterns from config")
+        return patterns
 
     def _load_agent_capabilities(self) -> Dict[str, Any]:
         """Agent 능력 정보 로드"""
@@ -214,24 +185,40 @@ class PlanningAgent:
 
             logger.info(f"LLM Intent Analysis Result: {result}")
 
-            # Intent 타입 파싱
-            intent_str = result.get("intent", "UNCLEAR").upper()
-            try:
-                intent_type = IntentType[intent_str]
-            except KeyError:
-                logger.warning(f"Unknown intent type from LLM: {intent_str}, using UNCLEAR")
-                intent_type = IntentType.UNCLEAR
+            # Intent 타입 파싱 (normalize to lowercase)
+            intent_str = result.get("intent", "unclear").lower()
 
-            # Agent 선택 (IRRELEVANT/UNCLEAR은 생략하여 성능 최적화)
-            if intent_type in [IntentType.IRRELEVANT, IntentType.UNCLEAR]:
+            # Validate intent exists in config
+            intent_def = None
+            for idef in self.intent_config.intents:
+                if idef.name == intent_str:
+                    intent_def = idef
+                    break
+
+            if not intent_def:
+                logger.warning(f"Unknown intent from LLM: {intent_str}, using 'unclear'")
+                intent_str = "unclear"
+                # Find unclear intent definition
+                for idef in self.intent_config.intents:
+                    if idef.name == "unclear":
+                        intent_def = idef
+                        break
+
+            # Agent 선택 (system intents는 생략하여 성능 최적화)
+            if intent_def and intent_def.system:
                 suggested_agents = []
-                logger.info(f"⚡ Skipping agent selection for {intent_type.value} (performance optimization)")
+                logger.info(f"⚡ Skipping agent selection for system intent '{intent_str}' (performance optimization)")
             else:
-                suggested_agents = await self._suggest_agents(
-                    intent_type=intent_type,
-                    query=query,
-                    keywords=result.get("keywords", [])
-                )
+                # Use suggested_agents from intent config if available
+                if intent_def and intent_def.suggested_agents:
+                    suggested_agents = intent_def.suggested_agents
+                else:
+                    # Fallback to LLM-based agent selection
+                    suggested_agents = await self._suggest_agents(
+                        intent_type=intent_str,
+                        query=query,
+                        keywords=result.get("keywords", [])
+                    )
 
             # 🆕 reuse_previous_data를 entities에 추가
             entities = result.get("entities", {})
@@ -242,7 +229,7 @@ class PlanningAgent:
                 entities["reuse_previous_data"] = reuse_previous_data
 
             return IntentResult(
-                intent_type=intent_type,
+                intent_type=intent_str,  # Now using string intent name
                 confidence=result.get("confidence", 0.5),
                 keywords=result.get("keywords", []),
                 reasoning=result.get("reasoning", ""),
@@ -261,40 +248,37 @@ class PlanningAgent:
         found_keywords = []
 
         # 각 의도 타입별 점수 계산
-        for intent_type, patterns in self.intent_patterns.items():
+        for intent_name, patterns in self.intent_patterns.items():
             score = 0
             for pattern in patterns:
                 if pattern in query.lower():
                     score += 1
                     found_keywords.append(pattern)
             if score > 0:
-                detected_intents[intent_type] = score
+                detected_intents[intent_name] = score
 
         # 가장 높은 점수의 의도 선택
         if detected_intents:
             best_intent = max(detected_intents.items(), key=lambda x: x[1])
-            intent_type = best_intent[0]
+            intent_name = best_intent[0]
             confidence = min(best_intent[1] * 0.3, 1.0)
         else:
-            intent_type = IntentType.UNCLEAR
+            intent_name = "unclear"
             confidence = 0.0
 
-        # Agent 선택 (패턴 매칭 - fallback에서는 기본 Agent 사용)
-        # Note: This is sync function now, so we provide basic agent selection
-        intent_to_agent = {
-            IntentType.LEGAL_CONSULT: ["search_team"],
-            IntentType.MARKET_INQUIRY: ["search_team"],
-            IntentType.LOAN_CONSULT: ["search_team"],
-            IntentType.CONTRACT_CREATION: ["document_team"],
-            IntentType.CONTRACT_REVIEW: ["search_team", "analysis_team"],
-            IntentType.COMPREHENSIVE: ["search_team", "analysis_team"],
-            IntentType.RISK_ANALYSIS: ["analysis_team"],
-            IntentType.UNCLEAR: ["search_team"],
-        }
-        suggested_agents = intent_to_agent.get(intent_type, ["search_team"])
+        # Agent 선택 - IntentConfig에서 suggested_agents 가져오기
+        suggested_agents = []
+        for intent_def in self.intent_config.intents:
+            if intent_def.name == intent_name:
+                suggested_agents = intent_def.suggested_agents
+                break
+
+        # Fallback: 추천 Agent가 없으면 search_team 사용
+        if not suggested_agents:
+            suggested_agents = ["search_team"]
 
         return IntentResult(
-            intent_type=intent_type,
+            intent_type=intent_name,  # Now using string intent name
             confidence=confidence,
             keywords=found_keywords,
             reasoning="Pattern-based analysis",
@@ -304,7 +288,7 @@ class PlanningAgent:
 
     async def _suggest_agents(
         self,
-        intent_type: IntentType,
+        intent_type: str,  # Now using string intent name
         query: str,
         keywords: List[str]
     ) -> List[str]:
@@ -312,16 +296,16 @@ class PlanningAgent:
         LLM 기반 Agent 추천 - 다층 Fallback 전략 + 키워드 필터
 
         Args:
-            intent_type: 분석된 의도 타입
+            intent_type: 분석된 의도 타입 (string, e.g., "information_inquiry")
             query: 원본 쿼리
             keywords: 추출된 키워드
 
         Returns:
             추천 Agent 목록
         """
-        # === 0차: 키워드 기반 필터 (경계 케이스 해결) ===
-        # LEGAL_CONSULT: 단순 질문은 search만, 복잡한 질문은 search + analysis
-        if intent_type == IntentType.LEGAL_CONSULT:
+        # === 0차: 키워드 기반 필터 (복잡도 분석) ===
+        # 정보 조회: 단순 질문은 search만, 복잡한 질문은 search + analysis
+        if intent_type == "information_inquiry":
             # 분석이 필요한 키워드
             analysis_keywords = [
                 "비교", "분석", "계산", "평가", "추천", "검토",
@@ -332,19 +316,19 @@ class PlanningAgent:
             needs_analysis = any(kw in query for kw in analysis_keywords)
 
             if not needs_analysis:
-                logger.info(f"✅ LEGAL_CONSULT without analysis keywords → search_team only")
+                logger.info(f"✅ {intent_type} without analysis keywords → search_team only")
                 return ["search_team"]
             else:
-                logger.info(f"✅ LEGAL_CONSULT with analysis keywords → search + analysis")
+                logger.info(f"✅ {intent_type} with analysis keywords → search + analysis")
                 return ["search_team", "analysis_team"]
 
-        # MARKET_INQUIRY: 비교/분석 키워드 체크
-        if intent_type == IntentType.MARKET_INQUIRY:
+        # 데이터 분석: 비교/분석 키워드 체크
+        if intent_type == "data_analysis":
             analysis_keywords = ["비교", "분석", "평가", "추천", "차이", "장단점"]
             needs_analysis = any(kw in query for kw in analysis_keywords)
 
             if not needs_analysis:
-                logger.info(f"✅ MARKET_INQUIRY without analysis keywords → search_team only")
+                logger.info(f"✅ {intent_type} without analysis keywords → search_team only")
                 return ["search_team"]
 
         # === 1차: Primary LLM으로 Agent 선택 ===
@@ -378,27 +362,24 @@ class PlanningAgent:
         # === 3차: Safe default agents (모든 작업 처리 가능한 조합) ===
         logger.error("⚠️ All LLM attempts failed, using safe default agents")
 
-        # Intent에 따른 안전한 기본값
+        # Intent에 따른 안전한 기본값 (generic intents)
         safe_defaults = {
-            IntentType.LEGAL_CONSULT: ["search_team"],
-            IntentType.MARKET_INQUIRY: ["search_team", "analysis_team"],
-            IntentType.LOAN_CONSULT: ["search_team", "analysis_team"],
-            IntentType.CONTRACT_CREATION: ["document_team"],
-            IntentType.CONTRACT_REVIEW: ["search_team", "analysis_team"],
-            IntentType.COMPREHENSIVE: ["search_team", "analysis_team"],
-            IntentType.RISK_ANALYSIS: ["search_team", "analysis_team"],
-            IntentType.UNCLEAR: ["search_team", "analysis_team"],  # 포괄적 대응
-            IntentType.IRRELEVANT: ["search_team"],
-            IntentType.ERROR: ["search_team", "analysis_team"]
+            "information_inquiry": ["search_team"],
+            "data_analysis": ["search_team", "analysis_team"],
+            "document_generation": ["document_team"],
+            "document_review": ["search_team", "analysis_team"],
+            "comprehensive_analysis": ["search_team", "analysis_team"],
+            "unclear": ["search_team", "analysis_team"],  # 포괄적 대응
+            "irrelevant": ["search_team"],
         }
 
         result = safe_defaults.get(intent_type, ["search_team", "analysis_team"])
-        logger.info(f"Safe default agents for {intent_type.value}: {result}")
+        logger.info(f"Safe default agents for '{intent_type}': {result}")
         return result
 
     async def _select_agents_with_llm(
         self,
-        intent_type: IntentType,
+        intent_type: str,  # Now using string intent name
         query: str,
         keywords: List[str],
         attempt: int = 1
@@ -407,7 +388,7 @@ class PlanningAgent:
         LLM을 사용한 Agent 선택 (상세 버전)
 
         Args:
-            intent_type: 의도 타입
+            intent_type: 의도 타입 (string, e.g., "information_inquiry")
             query: 원본 쿼리
             keywords: 키워드 목록
             attempt: 시도 횟수
@@ -415,25 +396,25 @@ class PlanningAgent:
         Returns:
             선택된 Agent 목록
         """
-        # 사용 가능한 Agent 정보 수집
+        # 사용 가능한 Agent 정보 수집 (generic descriptions)
         available_agents = {
             "search_team": {
                 "name": "search_team",
-                "capabilities": "법률 검색, 부동산 시세 조회, 개별 매물 검색, 대출 상품 검색",
-                "tools": ["legal_search", "market_data", "real_estate_search", "loan_data"],
-                "use_cases": ["법률 상담", "시세 조회", "매물 검색", "대출 정보"]
+                "capabilities": "정보 검색, 데이터 조회, 리소스 탐색",
+                "tools": ["search", "data_retrieval"],
+                "use_cases": ["정보 조회", "데이터 검색", "리소스 탐색"]
             },
             "analysis_team": {
                 "name": "analysis_team",
-                "capabilities": "데이터 분석, 리스크 평가, 인사이트 생성, 추천",
-                "tools": ["data_analyzer", "risk_evaluator"],
-                "use_cases": ["시장 분석", "리스크 평가", "투자 분석"]
+                "capabilities": "데이터 분석, 평가, 인사이트 생성, 추천",
+                "tools": ["data_analyzer", "evaluator"],
+                "use_cases": ["데이터 분석", "평가", "인사이트 도출"]
             },
             "document_team": {
                 "name": "document_team",
-                "capabilities": "계약서 작성, 문서 생성, 문서 검토",
-                "tools": ["document_generator", "contract_reviewer"],
-                "use_cases": ["계약서 작성", "문서 검토"]
+                "capabilities": "문서 작성, 문서 생성, 문서 검토",
+                "tools": ["document_generator", "document_reviewer"],
+                "use_cases": ["문서 작성", "문서 검토"]
             }
         }
 
@@ -442,7 +423,7 @@ class PlanningAgent:
                 prompt_name="agent_selection",
                 variables={
                     "query": query,
-                    "intent_type": intent_type.value,
+                    "intent_type": intent_type,  # Now passing string directly
                     "keywords": keywords,
                     "available_agents": available_agents,
                     "attempt": attempt
@@ -470,7 +451,7 @@ class PlanningAgent:
 
     async def _select_agents_with_llm_simple(
         self,
-        intent_type: IntentType,
+        intent_type: str,  # Now using string intent name
         query: str
     ) -> List[str]:
         """
@@ -482,7 +463,7 @@ class PlanningAgent:
                 prompt_name="agent_selection_simple",
                 variables={
                     "query": query,
-                    "intent_type": intent_type.value
+                    "intent_type": intent_type  # Now passing string directly
                 },
                 temperature=0.3
             )
@@ -518,14 +499,14 @@ class PlanningAgent:
 
         # 1. 의도 분석
         intent = await self.analyze_intent(query, context)
-        logger.info(f"Intent analyzed: {intent.intent_type.value} (confidence: {intent.confidence:.2f})")
+        logger.info(f"Intent analyzed: {intent.intent_type} (confidence: {intent.confidence:.2f})")
 
         # 2. 복합 질문 분해
         decomposed = await self.query_decomposer.decompose(
             query=query,
             context=context,
             intent_result={
-                "intent": intent.intent_type.value,
+                "intent": intent.intent_type,  # Now using string directly
                 "confidence": intent.confidence,
                 "keywords": intent.keywords,
                 "entities": intent.entities,
@@ -598,10 +579,10 @@ class PlanningAgent:
         Returns:
             실행 계획
         """
-        logger.info(f"Creating execution plan for intent: {intent.intent_type.value}")
+        logger.info(f"Creating execution plan for intent: {intent.intent_type}")
 
         # IRRELEVANT 의도는 빈 계획 반환 (에이전트 실행하지 않음)
-        if intent.intent_type == IntentType.IRRELEVANT:
+        if intent.intent_type == "irrelevant":
             logger.info("Intent is IRRELEVANT, returning empty execution plan")
             return ExecutionPlan(
                 steps=[],
@@ -613,7 +594,7 @@ class PlanningAgent:
             )
 
         # UNCLEAR이고 confidence가 낮으면 빈 계획 반환
-        if intent.intent_type == IntentType.UNCLEAR and intent.confidence < 0.3:
+        if intent.intent_type == "unclear" and intent.confidence < 0.3:
             logger.info(f"Intent is UNCLEAR with low confidence ({intent.confidence:.2f}), returning empty execution plan")
             return ExecutionPlan(
                 steps=[],
@@ -735,8 +716,8 @@ class PlanningAgent:
         if has_dependencies:
             return ExecutionStrategy.SEQUENTIAL
 
-        # 복합 분석이나 리스크 분석은 병렬 처리
-        if intent.intent_type in [IntentType.COMPREHENSIVE, IntentType.RISK_ANALYSIS]:
+        # 종합 분석은 병렬 처리
+        if intent.intent_type == "comprehensive_analysis":
             if len(steps) > 1:
                 return ExecutionStrategy.PARALLEL
 
@@ -856,7 +837,7 @@ class PlanningAgent:
     def get_plan_summary(self, plan: ExecutionPlan) -> str:
         """실행 계획 요약"""
         summary_parts = [
-            f"Intent: {plan.intent.intent_type.value} (confidence: {plan.intent.confidence:.2f})",
+            f"Intent: {plan.intent.intent_type} (confidence: {plan.intent.confidence:.2f})",
             f"Strategy: {plan.strategy.value}",
             f"Agents: {', '.join(step.agent_name for step in plan.steps)}",
             f"Estimated time: {plan.estimated_time:.1f}s"
@@ -886,7 +867,7 @@ if __name__ == "__main__":
         for query in simple_queries:
             print(f"\n질문: {query}")
             intent = await planner.analyze_intent(query)
-            print(f"의도: {intent.intent_type.value} (신뢰도: {intent.confidence:.2f})")
+            print(f"의도: {intent.intent_type} (신뢰도: {intent.confidence:.2f})")
             print(f"추천 Agent: {intent.suggested_agents}")
 
             # 실행 계획 생성

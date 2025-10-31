@@ -4,7 +4,18 @@
       "Bash(rm:*)",
       "Bash(del:*)",
       "Bash(python:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx create-react-app frontend --template typescript)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(npm start)",
+      "Bash(set PORT=4000)",
+      "Bash(npm uninstall:*)",
+      "Bash(find:*)",
+      "Bash(dir \"C:\\kdy\\Projects\\AI_PTmanager\\beta_v001\\backend\\alembic\")",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

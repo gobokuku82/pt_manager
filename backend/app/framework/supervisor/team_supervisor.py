@@ -21,21 +21,20 @@ from app.service_agent.foundation.simple_memory_service import LongTermMemorySer
 from app.db.postgre_db import get_async_db
 from app.core.config import settings
 
-from app.service_agent.foundation.separated_states import (
+from app.framework.agents.foundation.separated_states import (
     MainSupervisorState,
     SharedState,
     StateManager,
     PlanningState
 )
-from app.service_agent.foundation.context import LLMContext, create_default_llm_context
-from app.service_agent.cognitive_agents.planning_agent import PlanningAgent, IntentType, ExecutionStrategy
-from app.service_agent.execution_agents import SearchExecutor, DocumentExecutor, AnalysisExecutor
-from app.service_agent.foundation.agent_registry import AgentRegistry
-from app.service_agent.foundation.agent_adapter import initialize_agent_system
-from app.service_agent.foundation.checkpointer import create_checkpointer
-
-# ✅ LangGraph 0.6 HITL Pattern - Import Document Team workflow
-from app.service_agent.execution_agents.document_executor import build_document_workflow
+from app.framework.agents.foundation.context import LLMContext, create_default_llm_context
+from app.framework.agents.cognitive.planning_agent import PlanningAgent, ExecutionStrategy
+from app.framework.agents.execution.search_executor import SearchExecutor
+from app.framework.agents.execution.analysis_executor import AnalysisExecutor
+from app.framework.agents.execution.document_executor import DocumentExecutor, build_document_workflow
+from app.framework.agents.foundation.agent_registry import AgentRegistry
+from app.framework.agents.foundation.agent_adapter import initialize_agent_system
+from app.framework.agents.foundation.checkpointer import create_checkpointer
 
 logger = logging.getLogger(__name__)
 
