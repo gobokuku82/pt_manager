@@ -15,7 +15,10 @@
       "Bash(npm uninstall:*)",
       "Bash(find:*)",
       "Bash(dir \"C:\\kdy\\Projects\\AI_PTmanager\\beta_v001\\backend\\alembic\")",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(dir:*)",
+      "Bash(if not exist reportsversion_up mkdir reportsversion_up)",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": []
